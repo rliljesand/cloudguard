@@ -112,6 +112,7 @@ export class AzureDataSource {
         try{
             var response = await axios.put(url, data, options);
         }catch(error){
+            console.log("HERP", error);
             throw this.handleAzureError(error);
         }
         
@@ -212,8 +213,7 @@ export class AzureDataSource {
         return response.data.access_token || null;
     }
 
-    async postProvisionModifiyCluster(cluster: any, azureCluster: any): Promise<any>{
-        console.log(azureCluster.properties);
+    async postProvisionModifyCluster(cluster: any, azureCluster: any): Promise<any>{
         if(azureCluster && azureCluster.properties && azureCluster.properties.fqdn){
             var fqdn = azureCluster.properties.fqdn;
             var apiSerer = "https://" + fqdn.replace('.', '.portal.');
@@ -221,7 +221,6 @@ export class AzureDataSource {
             cluster['apiServer'] = apiSerer;
         }
         cluster['token'] = await this.getClusterAdminToken(cluster.name);
-        cluster['vendorState'] = azureCluster.properties.provisioningState;
         //TODO Configurator service should setup the rest of the containers/services we need
         //await this.azureConfiguratorService.setupYaml(cluster);
         return cluster;
@@ -233,6 +232,5 @@ export class AzureDataSource {
         }
         return error;
     }
-
 
 }

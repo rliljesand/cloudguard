@@ -7,8 +7,7 @@ import { MustHaveJwtGuard }         from '../auth/must-have-jwt.guard';
 import { ProjectRolesGuard }    from '../auth/project-roles.guard';
 
 import { ClustersService }  from './clusters.service';
-import { CloneService }     from '../kubernetes/clone.service';
-import { LoggerService }    from '../common/logger.service';
+import { LoggerService }    from '../logs/logs.service';
 import { ResponseService }  from '../common/response.service';
 
 import { Cluster }          from './cluster.entity';
@@ -20,24 +19,24 @@ import { ClusterPatchDto }  from './cluster-patch.dto';
 @Controller('clusters')
 export class ClustersController {
     
-    private readonly logger = new LoggerService(ClustersController.name);
-
     constructor(
         private configService: ConfigService,
         @InjectRepository(Cluster)
         private clusterRepository: Repository<Cluster>,
-        private cloneService: CloneService,
         private clustersService: ClustersService,
+        private logger: LoggerService,
         private responseService: ResponseService
-    ) {}
+    ) {
+        this.logger.setContext(ClustersController.name);
+    }
 
     @UseGuards(MustHaveJwtGuard)
     @Get()
     async findAll(): Promise<any> {
         // todo return an admin version of clusters here
-        this.logger.verbose("Finding all projects");
-        var clusters = await this.clusterRepository.find();
-        return this.responseService.createResponse(clusters, "Getting all clusters.");
+        this.logger.verbose("Finding all clusters");
+        var clusters = await this.clusterRepository.find({relations: ["project"]});
+        return this.responseService.createResponse(clusters, "Retrieved all clusters.");
     }
     
     @UseGuards(MustHaveJwtGuard)
@@ -46,73 +45,6 @@ export class ClustersController {
         this.logger.verbose("Counting clusters");
         var count = await this.clusterRepository.count();
         return this.responseService.createResponse(count, "Counted clusters.");
-    }
-
-    @UseGuards(MustHaveJwtGuard)
-    @Post('/aks')
-    async createAksCluster(@Body() clusterData: any) {
-        try{
-            var cluster = await this.clustersService.createAKSCluster(clusterData);
-        }catch(error){
-            throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        return this.responseService.createResponse(cluster, "Started creating cluster in Azure.");
-    }
-
-    @UseGuards(MustHaveJwtGuard)
-    @Patch('/aks/:formatName')
-    async patchAksCluster(@Param('formatName') formatName, @Body() patchData: any) {
-        try{
-            var cluster = await this.clustersService.patchAKSCluster(formatName, patchData);
-        }catch(error){
-            throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        return this.responseService.createResponse(cluster, "Started patching cluster in Azure.");
-    }
-
-    @UseGuards(MustHaveJwtGuard)
-    @Get('/aks/:name/kubeconfig')
-    async getAksKubeConfig(@Param('name') name) {
-        try{
-            var cluster = await this.clustersService.getAksKubeConfig(name);
-        }catch(error){
-            throw new HttpException("Azure did not like the request", HttpStatus.NOT_FOUND);
-        }
-        return this.responseService.createResponse(cluster, "Fetched KubeConfig from Azure.");
-    }
-
-    @UseGuards(MustHaveJwtGuard)
-    @Get('/aks/:name/upgradeProfile')
-    async getAksClusterUpgradeProfile(@Param('name') name) {
-        try{
-            var cluster = await this.clustersService.getUpgradeProfile(name);
-        }catch(error){
-            throw new HttpException("Azure did not like the request", HttpStatus.NOT_FOUND);
-        }
-        return this.responseService.createResponse(cluster, "Fetched cluster upgrade profile from Azure.");
-    }
-
-    @UseGuards(MustHaveJwtGuard)
-    @Get('/aks/:name')
-    async getAksCluster(@Param('name') name) {
-        try{
-            var cluster = await this.clustersService.getAKSCluster(name);
-        }catch(error){
-            throw new HttpException("Azure did not like the request", HttpStatus.NOT_FOUND);
-        }
-        return this.responseService.createResponse(cluster, "Fetched cluster from Azure.");
-    }
-
-
-    @UseGuards(MustHaveJwtGuard)
-    @Delete('/aks/:name')
-    async deleteAksCluster(@Param('name') name) {
-        try{
-            var response = await this.clustersService.deleteAKSCluster(name);
-        }catch(error){
-            throw new HttpException("Azure did not like the request", HttpStatus.NOT_FOUND);
-        }
-        return this.responseService.createResponse(response, "Deleted cluster in Azure.");
     }
     
     @UseGuards(MustHaveJwtGuard)
