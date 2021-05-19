@@ -51,6 +51,7 @@ export class SandboxController implements OnModuleInit{
 
         //var estimates = await this.clustersService.getModificationEstimation(cluster.formatName, "created");
         //console.log(estimates);
+        //this.azureDataSource.getClusterKubeConfig(cluster.name);
         //await this.kubernetesService.upsertArgo(cluster, {});
  
         //var createdClusterName = await this.azureService.createCluster({name: "cloudguard"});
